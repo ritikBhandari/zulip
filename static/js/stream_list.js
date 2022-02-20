@@ -3,6 +3,7 @@ import _ from "lodash";
 
 import render_stream_privacy from "../templates/stream_privacy.hbs";
 import render_stream_sidebar_row from "../templates/stream_sidebar_row.hbs";
+import render_stream_subheader from "../templates/streams_subheader.hbs";
 
 import * as blueslip from "./blueslip";
 import * as color_class from "./color_class";
@@ -16,6 +17,7 @@ import * as resize from "./resize";
 import * as scroll_util from "./scroll_util";
 import * as stream_data from "./stream_data";
 import * as stream_popover from "./stream_popover";
+import * as stream_settings_ui from "./stream_settings_ui";
 import * as stream_sort from "./stream_sort";
 import * as sub_store from "./sub_store";
 import * as topic_list from "./topic_list";
@@ -112,7 +114,7 @@ export function build_stream_list(force_rerender) {
     }
 
     // The main logic to build the list is in stream_sort.js, and
-    // we get three lists of streams (pinned/normal/dormant).
+    // we get four lists of streams (pinned/normal/muted/dormant).
     const stream_groups = stream_sort.sort_groups(streams, get_search_term());
 
     if (stream_groups.same_as_before && !force_rerender) {
@@ -124,30 +126,43 @@ export function build_stream_list(force_rerender) {
     function add_sidebar_li(stream_id) {
         const sidebar_row = stream_sidebar.get_row(stream_id);
         sidebar_row.update_whether_active();
+        // sidebar_row.update_whether_muted_active();
         elems.push(sidebar_row.get_li());
     }
 
     topic_list.clear();
     $parent.empty();
 
-    for (const stream_id of stream_groups.pinned_streams) {
-        add_sidebar_li(stream_id);
-    }
-
     const any_pinned_streams = stream_groups.pinned_streams.length > 0;
     const any_normal_streams = stream_groups.normal_streams.length > 0;
     const any_dormant_streams = stream_groups.dormant_streams.length > 0;
 
-    if (any_pinned_streams && (any_normal_streams || any_dormant_streams)) {
-        elems.push('<hr class="stream-split">');
+    if (any_pinned_streams) {
+        elems.push(render_stream_subheader({subheader_name: "Pinned"}));
+    }
+
+    for (const stream_id of stream_groups.pinned_streams) {
+        add_sidebar_li(stream_id);
+    }
+
+    for (const stream_id of stream_groups.muted_pinned_streams) {
+        add_sidebar_li(stream_id);
+    }
+
+    if (any_normal_streams) {
+        elems.push(render_stream_subheader({subheader_name: "Active"}));
     }
 
     for (const stream_id of stream_groups.normal_streams) {
         add_sidebar_li(stream_id);
     }
 
-    if (any_dormant_streams && any_normal_streams) {
-        elems.push('<hr class="stream-split">');
+    for (const stream_id of stream_groups.muted_active_streams) {
+        add_sidebar_li(stream_id);
+    }
+
+    if (any_dormant_streams) {
+        elems.push(render_stream_subheader({subheader_name: "Inactive"}));
     }
 
     for (const stream_id of stream_groups.dormant_streams) {
@@ -376,6 +391,11 @@ export function refresh_pinned_or_unpinned_stream(sub) {
     }
 }
 
+export function refresh_muted_or_unmuted_stream(sub) {
+    build_stream_sidebar_row(sub);
+    update_streams_sidebar();
+}
+
 export function get_sidebar_stream_topic_info(filter) {
     const result = {
         stream_id: undefined,
@@ -513,6 +533,18 @@ export function set_event_handlers() {
 
         clear_and_hide_search();
 
+        e.preventDefault();
+        e.stopPropagation();
+    });
+
+    $("#stream_filters").on("click", "li .toggle_stream_mute", (e) => {
+        if (e.metaKey || e.ctrlKey) {
+            /* We want browsers to handle clicks here by opening a new tab. */
+            return;
+        }
+        const stream_id = stream_id_for_elt($(e.target).parents("li"));
+        const sub = sub_store.get(stream_id);
+        stream_settings_ui.set_muted(sub, !sub.is_muted);
         e.preventDefault();
         e.stopPropagation();
     });
