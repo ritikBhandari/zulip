@@ -21,7 +21,7 @@ can set the language for automated messages and emails for the organization. Thi
   cannot detect their language preferences from their browser,
   including all users [created via the Zulip API][api-create-user].
 
-### Configure the organization notifications language
+### Configure the organization language for automated messages and emails
 
 {start_tabs}
 
