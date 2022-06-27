@@ -34,7 +34,7 @@ Notification bot messages sent to a single user will use
 
 You can configure where the Zulip notification bot
 [announces][new-stream-options] new public streams, or disable the new
-stream notification messages entirely. The topic for these messages
+stream announcements messages entirely. The topic for these messages
 is "new streams".
 
 {start_tabs}
@@ -50,7 +50,7 @@ is "new streams".
 ### New user announcements
 
 You can configure where the Zulip notification bot announces new users,
-or disable the new user notification messages entirely. The topic for
+or disable the new user announcements messages entirely. The topic for
 these messages is "signups".
 
 {start_tabs}
